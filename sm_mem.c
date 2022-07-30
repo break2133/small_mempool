@@ -1,16 +1,18 @@
 #include "sm_mem.h"
 
-static mem_manage* star;
-static mem_manage* lfree;
+static mempool_control mem_con;
 
 void sm_mempool_init(size_t memsize)
 {
+    mem_manage* lfree = NULL;
 	size_t maxsize = (size_t) - 1;
 	if (memsize > maxsize - 2 * sizeof(mem_manage))
 		return;
 	size_t pollsize = memsize + 2 * sizeof(mem_manage);
 	void * pool = malloc(pollsize);
-	MY_ASSERT(pool);
+	if (!pool)
+        return;
+
 	lfree = (mem_manage*)pool;
 	lfree->magic = 0xdea0;
 	lfree->mem_size = pollsize - 2 * sizeof(mem_manage);
@@ -18,11 +20,11 @@ void sm_mempool_init(size_t memsize)
 	lfree->next->prev = lfree;
 	lfree->next->mem_size = 0;
 	lfree->next->next = NULL;
-	lfree->next->magic = 0xE00D;	//E00D表示结束
+	lfree->next->magic = 0xE00D;	//"E00D" mean end
 	lfree->next->used = 1;
 	lfree->prev = NULL;
 	lfree->used = 0;
-	star = lfree;
+	mem_con.head = lfree;
 }
 
 void* sm_malloc(size_t size)
@@ -30,7 +32,9 @@ void* sm_malloc(size_t size)
 	if (!size)
 		return NULL;
 
-	for (lfree = star; lfree; lfree=lfree->next) {
+    mem_manage* lfree = NULL;
+
+	for (lfree = mem_con.head; lfree; lfree=lfree->next) {
 		if (size + sizeof(mem_manage) <= lfree->mem_size && !lfree->used) {
 			mem_manage* new_mem;
 			mem_manage* new_mem2;
@@ -113,4 +117,3 @@ void sm_free(void* _Block)
 		}
 	}
 }
-

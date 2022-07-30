@@ -5,7 +5,7 @@
 #include<stdint.h>
 #include<malloc.h>
 
-#define MY_ASSERT(_para_)	do{	if (!_para_) {printf("Mem init fail!\n");while(1);}}while(0);
+typedef void* (*malloc_hook)(size_t );
 
 typedef struct mem_m{
 	uint16_t magic;
@@ -15,10 +15,15 @@ typedef struct mem_m{
 	struct mem_m* prev;
 }mem_manage;
 
-extern void sm_mempool_init(size_t memsize);
-extern void* sm_malloc(size_t size);
-extern void sm_free(void* _Block);
-extern void* sm_calloc(size_t count, size_t size);
-extern void sm_printf(void);
+typedef struct {
+	mem_manage *head;
+	size_t free_mem;
+	//TODO
+}mempool_control;
+
+void sm_mempool_init(size_t memsize);
+void* sm_malloc(size_t size);
+void sm_free(void* _Block);
+void* sm_calloc(size_t count, size_t size);
 
 #endif //_SM_MEM_H_
